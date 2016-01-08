@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ViewController: UIViewController, CarbonCardViewDataSource {
+class ViewController: UIViewController, CarbonCardViewDelegate, CarbonCardViewDataSource {
 
     @IBOutlet var carbonCardView: CarbonCardView!
     
@@ -21,8 +21,22 @@ class ViewController: UIViewController, CarbonCardViewDataSource {
     @IBAction func reloadButtonTapped() {
         carbonCardView.reloadData()
     }
+    
+    @IBAction func leftButtonTapped() {
+        carbonCardView.removeFirstCardWithDirection(.Left)
+    }
+    
+    @IBAction func rightButtonTapped() {
+        carbonCardView.removeFirstCardWithDirection(.Right)
+    }
+    
+    // MARK: CarbonCardView delegate
+    func carbonCardView(carbonCardView: CarbonCardView, willRemoveCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem) {
+    }
+    func carbonCardView(carbonCardView: CarbonCardView, didRemovedCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem) {
+    }
 
-    // MARK: CarbonPaper data source
+    // MARK: CarbonCardView data source
     func numberOfItemsInCarbonCardView(carbonCardView: CarbonCardView) -> UInt {
         return 20
     }

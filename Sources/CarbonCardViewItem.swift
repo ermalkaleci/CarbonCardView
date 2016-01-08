@@ -32,11 +32,12 @@ public class CarbonCardViewItem: UIView {
     @IBInspectable public var cardCornerRadius: CGFloat = 4
     @IBInspectable public var shadowSize: CGSize = CGSizeMake(0, 2)
     @IBInspectable public var shadowBlur: CGFloat = 4
-    @IBInspectable public var shadowColor: UIColor = UIColor.lightGrayColor().colorWithAlphaComponent(0.15)
+    @IBInspectable public var shadowColor: UIColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.15)
     
-    public var splited = false
-    public var dragging = false
     public var delegate: CarbonCardViewItemDelegate?
+    
+    public private(set) var splited = false
+    public private(set) var dragging = false
     
     private var beginPoint: CGPoint?
     private var angle: CGFloat?
@@ -153,6 +154,12 @@ public class CarbonCardViewItem: UIView {
     }
 }
 
+/**
+ Remove with moving direction
+ 
+ - Left:  Move left
+ - Right: Move right
+ */
 public enum CarbonCardViewItemRemoveDirection {
     case Left, Right
 }

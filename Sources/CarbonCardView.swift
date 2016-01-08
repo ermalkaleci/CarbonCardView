@@ -33,14 +33,23 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
         }
     }
     
-    public private(set) var currentItemIndex: UInt = 0
-    private var numberOfItems: UInt = 0
-    private var cardViewItems = [CarbonCardViewItem]()
-    
+    /// Number of item that have to be visible
     @IBInspectable public var visibleItems: UInt = 10
     
-    private let transformingFactor: CGFloat = 0.05
+    /// Index of current top item
+    public private(set) var currentItemIndex: UInt = 0
     
+    /// An array with visible items
+    public private(set) var cardViewItems = [CarbonCardViewItem]()
+    
+    private var numberOfItems: UInt = 0
+    private let transformingFactor: CGFloat = 0.05
+    private var removingLocked = false
+    // MARK: Public API
+    
+    /**
+     Reload everything
+     */
     public func reloadData() {
         removeAllItems()
         
@@ -57,6 +66,18 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
         applyTransforms(false)
     }
     
+    /**
+     Remove first card view item with direction letf or right
+     
+     - parameter direction: Moving direction (.Left or .Right)
+     */
+    public func removeFirstCardWithDirection(direction: CarbonCardViewItemRemoveDirection) {
+        guard cardViewItems.count > 0 && removingLocked == false else { return }
+        removeCarbonCardViewItem(cardViewItems.first!, direction: direction)
+        removingLocked = true
+    }
+    
+    // MARK: Private API
     private func appendCardViewItem(cardViewItem: CarbonCardViewItem) {
         insertSubview(cardViewItem, atIndex: 0)
         cardViewItem.backgroundColor = UIColor.clearColor()
@@ -133,35 +154,6 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
         }
     }
     
-    // MARK: CarbonCardViewItem delegate
-    public func removeCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, direction: CarbonCardViewItemRemoveDirection) {
-        cardViewItems.removeAtIndex(cardViewItems.indexOf(carbonCardViewItem)!)
-        
-        UIView.animateWithDuration(0.2, delay: 0, options: .CurveEaseIn, animations: { () -> Void in
-            carbonCardViewItem.alpha = 0
-            
-            if direction == CarbonCardViewItemRemoveDirection.Left {
-                carbonCardViewItem.center.x = -CGRectGetWidth(self.bounds)/2
-            } else {
-                carbonCardViewItem.center.x = CGRectGetWidth(self.bounds) * 1.5
-            }
-        }) { (Bool) -> Void in
-            carbonCardViewItem.removeFromSuperview()
-            self.appendAnotherItem()
-        }
-        
-        applyTransforms(true)
-    }
-    
-    public func translateCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, point: CGPoint, angle: CGFloat) {
-        let animate = carbonCardViewItem.splited || carbonCardViewItem.dragging == false
-        transformViewsBehindView(carbonCardViewItem, point: point, angle: angle, animation: animate)
-    }
-    
-    public func carbonCardViewItemSplited(carbonCardViewItem: CarbonCardViewItem) {
-        transformViewsBehindView(carbonCardViewItem, point: CGPointMake(0, 0), angle: 0, animation: true)
-    }
-
     private func transformViewsBehindView(carbonCardViewItem: CarbonCardViewItem, point: CGPoint, angle: CGFloat, animation: Bool) {
         guard cardViewItems.count > 1 else { return }
         
@@ -189,13 +181,82 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
             }
         }
     }
+    
+    // MARK: CarbonCardViewItem delegate
+    public func removeCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, direction: CarbonCardViewItemRemoveDirection) {
+        cardViewItems.removeAtIndex(cardViewItems.indexOf(carbonCardViewItem)!)
+        
+        delegate?.carbonCardView?(self, willRemoveCarbonCardViewItem: carbonCardViewItem)
+        
+        UIView.animateWithDuration(0.2, delay: 0, options: .CurveEaseIn, animations: { () -> Void in
+            carbonCardViewItem.alpha = 0
+            
+            if direction == CarbonCardViewItemRemoveDirection.Left {
+                carbonCardViewItem.center.x = -CGRectGetWidth(self.bounds)/2
+            } else {
+                carbonCardViewItem.center.x = CGRectGetWidth(self.bounds) * 1.5
+            }
+            
+        }) { (Bool) -> Void in
+            carbonCardViewItem.removeFromSuperview()
+            
+            self.delegate?.carbonCardView?(self, didRemovedCarbonCardViewItem: carbonCardViewItem)
+            
+            self.appendAnotherItem()
+            
+            self.removingLocked = false
+        }
+        
+        applyTransforms(true)
+    }
+    
+    public func translateCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, point: CGPoint, angle: CGFloat) {
+        let animate = carbonCardViewItem.splited || carbonCardViewItem.dragging == false
+        transformViewsBehindView(carbonCardViewItem, point: point, angle: angle, animation: animate)
+    }
+    
+    public func carbonCardViewItemSplited(carbonCardViewItem: CarbonCardViewItem) {
+        transformViewsBehindView(carbonCardViewItem, point: CGPointMake(0, 0), angle: 0, animation: true)
+    }
 }
 
 @objc public protocol CarbonCardViewDelegate: NSObjectProtocol {
+    
+    /**
+     This method will be called when card view will begin the remove animation
+     
+     - parameter carbonCardView:     CarbonCardView instance that contains the card item
+     - parameter carbonCardViewItem: CarbonCardViewItem instance which is going to be removed
+     */
+    optional func carbonCardView(carbonCardView: CarbonCardView, willRemoveCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem)
+    
+    /**
+     This method will be called after card view did finish the remove animation
+     
+     - parameter carbonCardView:     CarbonCardView instance that contains the card item
+     - parameter carbonCardViewItem: CarbonCardViewItem instance which already is removed
+     */
     optional func carbonCardView(carbonCardView: CarbonCardView, didRemovedCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem)
 }
 
 @objc public protocol CarbonCardViewDataSource: NSObjectProtocol {
+    
+    /**
+     Number of card items for CarbonCardView instance
+     
+     - parameter carbonCardView: CarbonCardView instance
+     
+     - returns: Number of items
+     */
     func numberOfItemsInCarbonCardView(carbonCardView: CarbonCardView) -> UInt
+    
+    /**
+     CarbonCardViewItem instance at index
+     
+     - parameter carbonCardView: CarbonCardView instance
+     - parameter index:          CarbonCardViewItem index
+     
+     - returns: CarbonCardViewItem instance at index
+     */
     func carbonCardView(carbonCardView: CarbonCardView, itemAtIndex index: UInt) -> CarbonCardViewItem
 }
