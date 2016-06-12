@@ -25,7 +25,7 @@ import UIKit
 @IBDesignable
 
 public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
-
+    
     @IBOutlet public weak var delegate: AnyObject?
     @IBOutlet public weak var dataSource: AnyObject? {
         didSet {
@@ -33,8 +33,23 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
         }
     }
     
-    /// Number of item that have to be visible
-    @IBInspectable public var visibleItems: UInt = 10
+    @IBInspectable public var visibleItems: UInt = 3 {
+        willSet {
+            guard newValue > 1 else { return }
+            self.visibleItems = newValue
+        }
+    }
+    
+    @IBInspectable public var distanceToSplit: CGFloat = 80
+    
+    @IBInspectable public var cardCornerRadius: CGFloat = 4
+    @IBInspectable public var cardShadowOffset: CGSize = CGSizeMake(0, 2)
+    @IBInspectable public var cardShadowRadius: NSString = "4"
+    @IBInspectable public var cardShadowOpacity: NSString = "0.2"
+    @IBInspectable public var cardShadowColor: UIColor = UIColor(white: 0, alpha: 0.2)
+    
+    var marginPosition: CarbonCardViewMarginPosition = .Top
+    @IBInspectable public var marginSpace: Int = 20
     
     /// Index of current top item
     public private(set) var currentItemIndex: UInt = 0
@@ -43,8 +58,8 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
     public private(set) var cardViewItems = [CarbonCardViewItem]()
     
     private var numberOfItems: UInt = 0
-    private let transformingFactor: CGFloat = 0.05
     private var removingLocked = false
+    
     // MARK: Public API
     
     /**
@@ -54,7 +69,8 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
         removeAllItems()
         
         currentItemIndex = 0
-        numberOfItems = (dataSource?.numberOfItemsInCarbonCardView(self))!
+        numberOfItems = dataSource?.numberOfItemsInCarbonCardView(self) ?? 0
+        marginPosition = dataSource?.marginPositionCarbonCardView?(self) ?? .Top
         
         guard numberOfItems > 0 else { return }
         
@@ -78,16 +94,62 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
     }
     
     // MARK: Private API
-    private func appendCardViewItem(cardViewItem: CarbonCardViewItem) {
-        insertSubview(cardViewItem, atIndex: 0)
-        cardViewItem.backgroundColor = UIColor.clearColor()
-        cardViewItem.alpha = 0
+    
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        applyTransforms(false)
+    }
+    
+    private func appendCardViewItem(cardViewItem: UIView) -> CarbonCardViewItem {
         
-        cardViewItems.append(cardViewItem)
+        // Create the card
+        let card = CarbonCardViewItem()
+        card.distanceToSplit = distanceToSplit
+        card.cornerRadius = cardCornerRadius
+        card.shadowOffset = cardShadowOffset
+        card.shadowColor = cardShadowColor
+        if let opacity: Float = cardShadowOpacity.floatValue {
+            card.shadowOpacity = opacity
+        }
+        if let radius: Float = cardShadowRadius.floatValue {
+            card.shadowRadius = CGFloat(radius)
+        }
         
+        // Append the view into card
+        card.addSubview(cardViewItem)
+        
+        // Setup constraints
         cardViewItem.translatesAutoresizingMaskIntoConstraints = false
-        addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[cardViewItem]|", options: [.AlignAllLeading, .AlignAllTrailing], metrics: nil, views: ["cardViewItem": cardViewItem]))
-        addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-(20)-[cardViewItem]|", options: [.AlignAllTop, .AlignAllBottom], metrics: nil, views: ["cardViewItem": cardViewItem]))
+        card.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|[cardView]|", options: .DirectionMask, metrics: nil, views: ["cardView": cardViewItem]))
+        card.addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|[cardView]|", options: .DirectionMask, metrics: nil, views: ["cardView": cardViewItem]))
+        
+        insertSubview(card, atIndex: 0)
+        card.clipsToBounds = false
+        card.alpha = 0
+        
+        cardViewItems.append(card)
+        
+        let views = ["card": card]
+        
+        var metrics = ["top": 0, "bottom": 0, "left": 0, "right": 0]
+        
+        switch marginPosition {
+        case .Top:
+            metrics["top"] = marginSpace
+        case .Bottom:
+            metrics["bottom"] = marginSpace
+        case .Left:
+            metrics["left"] = marginSpace
+        case .Right:
+            metrics["right"] = marginSpace
+        }
+        
+        card.translatesAutoresizingMaskIntoConstraints = false
+        
+        addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("H:|-(left)-[card]-(right)-|", options: [.AlignAllLeading, .AlignAllTrailing], metrics: metrics, views: views))
+        addConstraints(NSLayoutConstraint.constraintsWithVisualFormat("V:|-(top)-[card]-(bottom)-|", options: [.AlignAllTop, .AlignAllBottom], metrics: metrics, views: views))
+        
+        return card
     }
     
     private func removeAllItems() {
@@ -122,11 +184,8 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
                 cardViewItem.userInteractionEnabled = true
             }
             
-            let k = CGFloat(index) * transformingFactor
-            let cardViewHeight = CGRectGetHeight(bounds) - layoutMargins.top - layoutMargins.bottom - cardViewItem.layoutMargins.top - cardViewItem.layoutMargins.bottom
-            
-            let scale = CGAffineTransformMakeScale(1.0 - k, 1.0 - k)
-            let translate = CGAffineTransformMakeTranslation(0, (1-k) * cardViewHeight/2 - cardViewHeight/2 - k * 2 * 20)
+            let scale = CGAffineTransformMakeScale(scaleForIndex(index), scaleForIndex(index))
+            let translate = self.translateForIndex(index, point: CGPointZero)
             
             let animationBlock = {
                 cardViewItem.alpha = 1
@@ -142,14 +201,16 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
     }
     
     private func appendAnotherItem() {
-        currentItemIndex++
+        currentItemIndex += 1
         let remains = numberOfItems - currentItemIndex
         if remains > visibleItems {
             let insertIndex = currentItemIndex + visibleItems - 1
             if let cardViewItem = dataSource?.carbonCardView(self, itemAtIndex: insertIndex) {
-                appendCardViewItem(cardViewItem)
-                applyTransformAtIndex(cardViewItems.indexOf(cardViewItem)!, animation: false)
-                cardViewItem.fadeIn()
+                let card = appendCardViewItem(cardViewItem)
+                if let index = cardViewItems.indexOf(card) {
+                    applyTransformAtIndex(index, animation: false)
+                }
+                card.fadeIn()
             }
         }
     }
@@ -157,34 +218,38 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
     private func transformViewsBehindView(carbonCardViewItem: CarbonCardViewItem, point: CGPoint, angle: CGFloat, animation: Bool) {
         guard cardViewItems.count > 1 else { return }
         
-        let x = point.x
-        let y = point.y
-        
         for i in 1...cardViewItems.count - 1 {
             if let cardViewItem: CarbonCardViewItem = cardViewItems[i] {
-                
-                let k = CGFloat(i) * transformingFactor
-                let cardViewHeight = CGRectGetHeight(bounds) - layoutMargins.top - layoutMargins.bottom - cardViewItem.layoutMargins.top - cardViewItem.layoutMargins.bottom
-                
-                let scale = CGAffineTransformMakeScale(1.0 - k, 1.0 - k)
-                let rotation = CGAffineTransformMakeRotation(angle * (1 - k * 2))
-                let translate = CGAffineTransformMakeTranslation(0 + x * (1 - k * 2), ((1-k) * cardViewHeight/2 - cardViewHeight/2 - k * 2 * 20) + y * ( 1 - k * 2))
-                
-                let scaleRotate = CGAffineTransformConcat(scale, rotation)
-                if animation == true {
-                    cardViewItem.springAnimation({ () -> Void in
-                        cardViewItem.transform = CGAffineTransformConcat(scaleRotate, translate)
-                        }, completion: nil)
-                } else {
-                    cardViewItem.transform = CGAffineTransformConcat(scaleRotate, translate)
-                }
+                transformCardViewItem(cardViewItem, index: i, point: point, angle: angle, animation: animation)
             }
         }
     }
     
-    // MARK: CarbonCardViewItem delegate
+    private func transformCardViewItem(cardViewItem: CarbonCardViewItem, index: Int, point: CGPoint, angle: CGFloat, animation: Bool) {
+        
+        let scale = CGAffineTransformMakeScale(scaleForIndex(index), scaleForIndex(index))
+        let rotation = CGAffineTransformMakeRotation(angle * scaleForIndex(index))
+        let translate = self.translateForIndex(index, point: point)
+        
+        let scaleRotate = CGAffineTransformConcat(scale, rotation)
+        if animation == true {
+            cardViewItem.springAnimation({ () -> Void in
+                cardViewItem.transform = CGAffineTransformConcat(scaleRotate, translate)
+                }, completion: nil)
+        } else {
+            cardViewItem.transform = CGAffineTransformConcat(scaleRotate, translate)
+        }
+    }
+    
+}
+
+// MARK: CarbonCardViewItem delegate
+extension CarbonCardView {
+    
     public func removeCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, direction: CarbonCardViewItemRemoveDirection) {
-        cardViewItems.removeAtIndex(cardViewItems.indexOf(carbonCardViewItem)!)
+        guard let index = cardViewItems.indexOf(carbonCardViewItem) else { return }
+        
+        cardViewItems.removeAtIndex(index)
         
         delegate?.carbonCardView?(self, willRemoveCarbonCardViewItem: carbonCardViewItem)
         
@@ -211,13 +276,61 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
     }
     
     public func translateCarbonCardViewItem(carbonCardViewItem: CarbonCardViewItem, point: CGPoint, angle: CGFloat) {
-        let animate = carbonCardViewItem.splited || carbonCardViewItem.dragging == false
+        let animate: Bool = carbonCardViewItem.isSplitted || carbonCardViewItem.isDragging == false
         transformViewsBehindView(carbonCardViewItem, point: point, angle: angle, animation: animate)
     }
     
     public func carbonCardViewItemSplited(carbonCardViewItem: CarbonCardViewItem) {
-        transformViewsBehindView(carbonCardViewItem, point: CGPointMake(0, 0), angle: 0, animation: true)
+        transformViewsBehindView(carbonCardViewItem, point: CGPointZero, angle: 0, animation: true)
     }
+}
+
+extension CarbonCardView {
+    
+    private func easeOut(i: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat) -> CGFloat {
+        let t = i / d
+        return c * t * t + b
+    }
+    
+    private func translateForIndex(index: Int, point: CGPoint) -> CGAffineTransform {
+        let i = CGFloat(index)
+        let items = CGFloat(visibleItems)
+        
+        var cardHeight = (CGRectGetHeight(bounds) - CGFloat(marginSpace))
+        
+        if marginPosition == .Left || marginPosition == .Right {
+            cardHeight = (CGRectGetWidth(bounds) - CGFloat(marginSpace))
+        }
+        
+        let extraMove = cardHeight / 2 * (1 - scaleForIndex(index)) + CGFloat(index) * CGFloat(marginSpace) / CGFloat(visibleItems - 1)
+        
+        var x = easeOut(items - i, b: 0, c: point.x, d: items)
+        var y = easeOut(items - i, b: 0, c: point.y, d: items)
+        
+        switch marginPosition {
+        case .Top:
+            y -= extraMove
+        case .Bottom:
+            y += extraMove
+        case .Left:
+            x -= extraMove
+        case .Right:
+            x += extraMove
+        }
+        
+        return CGAffineTransformMakeTranslation(x, y)
+    }
+    
+    private func scaleForIndex(index: Int) -> CGFloat {
+        return 1 - CGFloat(index) * 0.4 / CGFloat(visibleItems)
+    }
+}
+
+@objc public enum CarbonCardViewMarginPosition: Int {
+    case Top
+    case Bottom
+    case Left
+    case Right
 }
 
 @objc public protocol CarbonCardViewDelegate: NSObjectProtocol {
@@ -258,5 +371,14 @@ public class CarbonCardView: UIView, CarbonCardViewItemDelegate {
      
      - returns: CarbonCardViewItem instance at index
      */
-    func carbonCardView(carbonCardView: CarbonCardView, itemAtIndex index: UInt) -> CarbonCardViewItem
+    func carbonCardView(carbonCardView: CarbonCardView, itemAtIndex index: UInt) -> UIView
+    
+    /**
+     CarbonCardView items orientation
+     
+     - parameter carbonCardView: CarbonCardView instance
+     
+     - returns: Position
+     */
+    optional func marginPositionCarbonCardView(carbonCardView: CarbonCardView) -> CarbonCardViewMarginPosition
 }

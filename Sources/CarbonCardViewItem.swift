@@ -26,45 +26,36 @@ import UIKit
 
 public class CarbonCardViewItem: UIView {
 
-    @IBInspectable public var cardFillColor: UIColor = UIColor.whiteColor()
-    @IBInspectable public var cardStrokeColor: UIColor = UIColor.lightGrayColor()
-    @IBInspectable public var cardStrokeWidth: CGFloat = 2 // strokeWidth will divided by 10
-    @IBInspectable public var cardCornerRadius: CGFloat = 4
-    @IBInspectable public var shadowSize: CGSize = CGSizeMake(0, 2)
-    @IBInspectable public var shadowBlur: CGFloat = 4
-    @IBInspectable public var shadowColor: UIColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.15)
+    public var distanceToSplit: CGFloat = 0
+    public var cornerRadius: CGFloat = 0
+    public var shadowOffset: CGSize = CGSizeZero
+    public var shadowRadius: CGFloat = 0
+    public var shadowOpacity: Float = 0
+    public var shadowColor: UIColor = UIColor.clearColor()
     
-    public var delegate: CarbonCardViewItemDelegate?
+    public weak var delegate: CarbonCardViewItemDelegate?
     
-    public private(set) var splited = false
-    public private(set) var dragging = false
+    public private(set) var isSplitted = false
+    public private(set) var isDragging = false
     
     private var beginPoint: CGPoint?
     private var angle: CGFloat?
-    private let distanceToSplit: CGFloat = 60
     
-    override public func drawRect(rect: CGRect) {
-        let newRect = CGRectMake(
-            layoutMargins.left,
-            layoutMargins.top,
-            CGRectGetWidth(rect) - layoutMargins.left - layoutMargins.right,
-            CGRectGetHeight(rect) - layoutMargins.top - layoutMargins.bottom
-        )
-        super.drawRect(newRect)
+    private func updateCard() {
+        layer.shadowOffset  = shadowOffset
+        layer.shadowOpacity = shadowOpacity
+        layer.shadowRadius  = shadowRadius
+        layer.shadowPath    = UIBezierPath(roundedRect: self.bounds, cornerRadius: self.cornerRadius).CGPath
+        layer.cornerRadius  = cornerRadius
         
-        let context = UIGraphicsGetCurrentContext()
-        CGContextSaveGState(context)
-        CGContextSetShadowWithColor(context, shadowSize, shadowBlur * transform.a, shadowColor.CGColor)
-        
-        cardFillColor.setFill()
-        cardStrokeColor.setStroke()
-        
-        let bezierPath = UIBezierPath(roundedRect: newRect, cornerRadius: cardCornerRadius)
-        bezierPath.lineWidth = cardStrokeWidth/10.0
-        bezierPath.fill()
-        bezierPath.stroke()
-        
-        CGContextRestoreGState(context)
+        if let sublayer: CALayer = layer.sublayers?.first {
+            sublayer.cornerRadius = cornerRadius
+        }
+    }
+    
+    override public func layoutSubviews() {
+        super.layoutSubviews()
+        updateCard()
     }
     
     public override func touchesBegan(touches: Set<UITouch>, withEvent event: UIEvent?) {
@@ -76,39 +67,42 @@ public class CarbonCardViewItem: UIView {
     }
     
     public override func touchesMoved(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        if let point = touches.first?.locationInView(superview) {
-            let movedByX = point.x - (beginPoint?.x)!
-            let movedByY = point.y - (beginPoint?.y)!
+        if let
+            beginPoint  = beginPoint,
+            point       = touches.first?.locationInView(superview)
+        {
+            let movedByX = point.x - beginPoint.x
+            let movedByY = point.y - beginPoint.y
             
-            let rotationAngle = angle! * (abs(movedByX) + abs(movedByY)) / 1000
-            let rotate = CGAffineTransformMakeRotation(rotationAngle)
-            let translate = CGAffineTransformMakeTranslation(movedByX, movedByY)
+            let rotationAngle   = movedByX / CGRectGetWidth(bounds) * 0.5
+            let rotate          = CGAffineTransformMakeRotation(rotationAngle)
+            let translate       = CGAffineTransformMakeTranslation(movedByX, movedByY)
             
             transform = CGAffineTransformConcat(rotate, translate)
             
             if sqrt(pow(movedByX, 2) + pow(movedByY, 2)) > distanceToSplit {
-                splited = true
+                isSplitted = true
                 delegate?.carbonCardViewItemSplited(self)
-            } else if splited == false {
+            } else if isSplitted == false {
                 delegate?.translateCarbonCardViewItem(self, point: CGPointMake(movedByX, movedByY), angle: rotationAngle)
             }
         }
         
         // Set dragging: true after calling delegate to animate first movement
-        dragging = true
+        isDragging = true
     }
 
     public override func touchesEnded(touches: Set<UITouch>, withEvent event: UIEvent?) {
-        dragging = false
+        isDragging = false
         
-        if let point = touches.first?.locationInView(superview) {
-            let movedByX = point.x - (beginPoint?.x)!
-            let movedByY = point.y - (beginPoint?.y)!
+        if let
+            beginPoint  = beginPoint,
+            point       = touches.first?.locationInView(superview)
+        {
+            let movedByX = point.x - beginPoint.x
+            let movedByY = point.y - beginPoint.y
             
-            var direction: CarbonCardViewItemRemoveDirection = .Right
-            if (movedByX < 0) {
-                direction = .Left
-            }
+            let direction: CarbonCardViewItemRemoveDirection = movedByX < 0 ? .Left : .Right
             
             if sqrt(pow(movedByX, 2) + pow(movedByY, 2)) > distanceToSplit {
                 delegate?.removeCarbonCardViewItem(self, direction: direction)
@@ -119,16 +113,16 @@ public class CarbonCardViewItem: UIView {
     }
     
     public override func touchesCancelled(touches: Set<UITouch>?, withEvent event: UIEvent?) {
-        dragging = false
+        isDragging = false
         
-        if let point = touches?.first?.locationInView(superview) {
-            let movedByX = point.x - (beginPoint?.x)!
-            let movedByY = point.y - (beginPoint?.y)!
+        if let
+            beginPoint  = beginPoint,
+            point       = touches?.first?.locationInView(superview)
+        {
+            let movedByX = point.x - beginPoint.x
+            let movedByY = point.y - beginPoint.y
             
-            var direction: CarbonCardViewItemRemoveDirection = .Right
-            if (movedByX < 0) {
-                direction = .Left
-            }
+            let direction: CarbonCardViewItemRemoveDirection =  movedByX < 0 ? .Left : .Right
             
             if sqrt(pow(movedByX, 2) + pow(movedByY, 2)) > distanceToSplit {
                 self.userInteractionEnabled = false
@@ -142,14 +136,14 @@ public class CarbonCardViewItem: UIView {
     private func reset() {
         delegate?.translateCarbonCardViewItem(self, point: CGPointMake(0, 0), angle: 0)
         
-        let rotate = CGAffineTransformMakeRotation(0)
-        let translate = CGAffineTransformMakeTranslation(0, 0)
+        let rotate      = CGAffineTransformMakeRotation(0)
+        let translate   = CGAffineTransformMakeTranslation(0, 0)
 
         springAnimation({ () -> Void in
             self.transform = CGAffineTransformConcat(rotate, translate)
         })
         { (Bool) -> Void in
-            self.splited = false
+            self.isSplitted = false
         }
     }
 }

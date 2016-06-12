@@ -20,6 +20,7 @@
 		8E3779341C39A8AE00905AB4 /* CarbonCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3779331C39A8AE00905AB4 /* CarbonCardView.swift */; };
 		8E3779361C39AB8500905AB4 /* CarbonCardViewItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E3779351C39AB8500905AB4 /* CarbonCardViewItem.swift */; };
 		8E88BB7A1C3F020600496CED /* CarbonCardViewItemAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E88BB791C3F020600496CED /* CarbonCardViewItemAnimation.swift */; };
+		A6186E231D0DA79000EAFA23 /* SettingsTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6186E221D0DA79000EAFA23 /* SettingsTableViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -38,6 +39,7 @@
 		8E3779331C39A8AE00905AB4 /* CarbonCardView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CarbonCardView.swift; sourceTree = "<group>"; };
 		8E3779351C39AB8500905AB4 /* CarbonCardViewItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CarbonCardViewItem.swift; sourceTree = "<group>"; };
 		8E88BB791C3F020600496CED /* CarbonCardViewItemAnimation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CarbonCardViewItemAnimation.swift; sourceTree = "<group>"; };
+		A6186E221D0DA79000EAFA23 /* SettingsTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsTableViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,11 +86,12 @@
 				8E3779201C39A7D300905AB4 /* AppDelegate.swift */,
 				8E3779221C39A7D300905AB4 /* ViewController.swift */,
 				8E3779241C39A7D300905AB4 /* Main.storyboard */,
+				A6186E221D0DA79000EAFA23 /* SettingsTableViewController.swift */,
+				8E2020421C3C0365000B9C07 /* CardItem.swift */,
+				8E2020441C3C0382000B9C07 /* CardItem.xib */,
 				8E3779271C39A7D300905AB4 /* Assets.xcassets */,
 				8E3779291C39A7D300905AB4 /* LaunchScreen.storyboard */,
 				8E37792C1C39A7D300905AB4 /* Info.plist */,
-				8E2020421C3C0365000B9C07 /* CardItem.swift */,
-				8E2020441C3C0382000B9C07 /* CardItem.xib */,
 				8E04E4F11C3D8990009542D0 /* Images */,
 			);
 			path = Example;
@@ -137,6 +140,7 @@
 				TargetAttributes = {
 					8E37791C1C39A7D300905AB4 = {
 						CreatedOnToolsVersion = 7.2;
+						DevelopmentTeam = WSDWDF57D2;
 					};
 				};
 			};
@@ -186,6 +190,7 @@
 				8E3779211C39A7D300905AB4 /* AppDelegate.swift in Sources */,
 				8E3779341C39A8AE00905AB4 /* CarbonCardView.swift in Sources */,
 				8E88BB7A1C3F020600496CED /* CarbonCardViewItemAnimation.swift in Sources */,
+				A6186E231D0DA79000EAFA23 /* SettingsTableViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,6 +301,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Example/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ermalkaleci.Example;
@@ -307,6 +313,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Example/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = com.ermalkaleci.Example;

@@ -29,19 +29,28 @@ class ViewController: UIViewController, CarbonCardViewDelegate, CarbonCardViewDa
     @IBAction func rightButtonTapped() {
         carbonCardView.removeFirstCardWithDirection(.Right)
     }
+
+}
+
+// MARK: CarbonCardView delegate
+extension ViewController {
     
-    // MARK: CarbonCardView delegate
     func carbonCardView(carbonCardView: CarbonCardView, willRemoveCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem) {
     }
+    
     func carbonCardView(carbonCardView: CarbonCardView, didRemovedCarbonCardViewItem carbonCardViewItem: CarbonCardViewItem) {
     }
+    
+}
 
-    // MARK: CarbonCardView data source
+// MARK: CarbonCardView data source
+extension ViewController {
+    
     func numberOfItemsInCarbonCardView(carbonCardView: CarbonCardView) -> UInt {
         return 20
     }
     
-    func carbonCardView(carbonCardView: CarbonCardView, itemAtIndex index: UInt) -> CarbonCardViewItem {
+    func carbonCardView(carbonCardView: CarbonCardView, itemAtIndex index: UInt) -> UIView {
         let card = NSBundle.mainBundle().loadNibNamed("CardItem", owner: self, options: nil).first as! CardItem
         
         if index % 3 == 0 {
@@ -65,6 +74,10 @@ class ViewController: UIViewController, CarbonCardViewDelegate, CarbonCardViewDa
         }
         
         return card
+    }
+    
+    func marginPositionCarbonCardView(carbonCardView: CarbonCardView) -> CarbonCardViewMarginPosition {
+        return .Top
     }
 }
 

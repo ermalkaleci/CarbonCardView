@@ -8,7 +8,7 @@
 
 import UIKit
 
-class CardItem: CarbonCardViewItem {
+class CardItem: UIView {
     @IBOutlet var cardImageView: UIImageView!
     @IBOutlet var cardLabel: UILabel!
 }
