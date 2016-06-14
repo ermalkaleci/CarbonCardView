@@ -54,6 +54,11 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ZlW-hB-N9d" customClass="CarbonCardView" customModule="Example" customModuleProvider="target">
                                 <rect key="frame" x="20" y="124" width="280" height="342"/>
                                 <color key="backgroundColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
+                                <userDefinedRuntimeAttributes>
+                                    <userDefinedRuntimeAttribute type="number" keyPath="visibleItems">
+                                        <integer key="value" value="5"/>
+                                    </userDefinedRuntimeAttribute>
+                                </userDefinedRuntimeAttributes>
                                 <connections>
                                     <outlet property="dataSource" destination="BYZ-38-t0r" id="yjZ-dy-8RN"/>
                                     <outlet property="delegate" destination="BYZ-38-t0r" id="fWK-EX-5Au"/>
